@@ -7,6 +7,7 @@
 -- Importing libraries used for drawCircleAtPoint and crankIndicator
 import "CoreLibs/graphics"
 import "CoreLibs/ui"
+import "CoreLibs/sprites"
 
 -- Localizing commonly used globals
 local pd <const> = playdate
@@ -16,6 +17,27 @@ local gfx <const> = playdate.graphics
 local playerSize = 10
 local playerVelocity = 3
 local playerX, playerY = 200, 120
+
+local dPadPoints = {
+    {200, 50},
+    {200, 35},
+    {230, 35},
+    {230, 5},
+    {245, 5},
+    {245, 35},
+    {275, 35},
+    {275, 50},
+    {245, 50},
+    {245, 80},
+    {230, 80},
+    {230, 50}
+}
+local flattened = {}
+
+for _, point in ipairs(dPadPoints) do
+    table.insert(flattened, point[1])
+    table.insert(flattened, point[2])
+end
 
 -- Drawing player image
 local playerImage = gfx.image.new(32, 32)
@@ -45,6 +67,19 @@ local function ring(value, min, max)
 		min, max = max, min
 	end
 	return min + (value - min) % (max - min)
+end
+
+-- Draw a circle with a line indicating the crank's angle/position
+local function drawCrankAngle(xPosition, crankPosition, rotationIncrement, size)
+    -- local circleCenterOffset = size / 2
+    gfx.drawCircleAtPoint(xPosition, 115, size)
+    gfx.drawTextAligned(""..rotationIncrement, xPosition, 67, kTextAlignment.right)
+    gfx.drawCircleAtPoint(xPosition + 5, 71, 3)
+
+    local radians = math.rad((crankPosition // rotationIncrement) * rotationIncrement - 90)
+    local endPointX = xPosition + size * math.cos(radians)
+    local endPointY = 115 + size * math.sin(radians)
+    gfx.drawLine(xPosition, 115, endPointX, endPointY)
 end
 
 -- playdate.update function is required in every project!
@@ -91,28 +126,14 @@ function playdate.update()
 
     -- draw crank indicator
     gfx.drawTextAligned("Crank docked: " ..tostring(pd.isCrankDocked()), 10, 50, kTextAlignment.left)
-    gfx.drawCircleAtPoint(55, 135, 50)
-    gfx.drawCircleAtPoint(155, 135, 50)
-    gfx.drawCircleAtPoint(255, 135, 50)
 
-    local radians = math.rad(intCrankPosition - 90)
-    local endPointX = 55 + 50 * math.cos(radians)
-    local endPointY = 135 + 50 * math.sin(radians)
-    gfx.drawLine(55, 135, endPointX, endPointY)
-
-    -- 5 degree increment circle
-    local radians = math.rad((intCrankPosition // 5) * 5 - 90)
-    local endPointX = 155 + 50 * math.cos(radians)
-    local endPointY = 135 + 50 * math.sin(radians)
-    gfx.drawLine(155, 135, endPointX, endPointY)
-
-    -- 15 degree
-    local radians = math.rad((intCrankPosition // 10) * 10 - 90)
-    local endPointX = 255 + 50 * math.cos(radians)
-    local endPointY = 135 + 50 * math.sin(radians)
-    gfx.drawLine(255, 135, endPointX, endPointY)
+    drawCrankAngle(35, intCrankPosition, 1, 30)
+    drawCrankAngle(95, intCrankPosition, 5, 30)
+    drawCrankAngle(155, intCrankPosition, 15, 30)
 
     -- button representations
+    local dPadShape = pd.geometry.polygon.new(table.unpack(flattened))
+    dPadShape:close()
     gfx.drawPolygon(200, 50, 200, 35, 230, 35, 230, 5, 245, 5, 245, 35, 275, 35, 275, 50, 245, 50, 245, 80, 230, 80, 230, 50)
 
     if pd.buttonIsPressed(pd.kButtonUp) then

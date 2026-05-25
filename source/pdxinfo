@@ -2,5 +2,5 @@ name=input test
 author=dragondux
 description=displays inputs as they come in and a representation of different increments of crank angles
 bundleID=
-version=1.0.0
+version=1.1.0
 buildNumber=1
