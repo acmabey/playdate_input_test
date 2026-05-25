@@ -166,6 +166,11 @@ function playdate.update()
         gfx.drawTextAligned("A", 345, circleY + 7, kTextAlignment.center)
     end
 
+
+    -- y = 150 is 5px below the circles
+
+    gfx.drawRect(5, 150, 32, 32)
+
     -- playerImage:drawAnchored(playerX, playerY, 0.5, 0.5)
 
 end
