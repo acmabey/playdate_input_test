@@ -13,11 +13,7 @@ import "CoreLibs/sprites"
 local pd <const> = playdate
 local gfx <const> = playdate.graphics
 
--- Defining player variables
-local playerSize = 10
-local playerVelocity = 3
-local playerX, playerY = 200, 120
-
+-- Define the d-pad shape
 local dPadPoints = {
     {200, 50},
     {200, 35},
@@ -32,11 +28,22 @@ local dPadPoints = {
     {230, 80},
     {230, 50}
 }
+
 local flattened = {}
 
 for _, point in ipairs(dPadPoints) do
     table.insert(flattened, point[1])
     table.insert(flattened, point[2])
+end
+
+-- Prepare the sprite frames
+local smallSprite = {}
+local frameCounter = 0
+CurrentFrame = 1
+
+for i = 0, 5, 1
+do
+    table.insert(smallSprite, gfx.image.new("/images/sprite_" .. i .. ".png"))
 end
 
 -- Drawing player image
@@ -71,8 +78,9 @@ end
 
 -- Draw a circle with a line indicating the crank's angle/position
 local function drawCrankAngle(xPosition, crankPosition, rotationIncrement, size)
-    -- local circleCenterOffset = size / 2
     gfx.drawCircleAtPoint(xPosition, 115, size)
+
+    -- display angle in text
     gfx.drawTextAligned(""..rotationIncrement, xPosition, 67, kTextAlignment.right)
     gfx.drawCircleAtPoint(xPosition + 5, 71, 3)
 
@@ -80,6 +88,15 @@ local function drawCrankAngle(xPosition, crankPosition, rotationIncrement, size)
     local endPointX = xPosition + size * math.cos(radians)
     local endPointY = 115 + size * math.sin(radians)
     gfx.drawLine(xPosition, 115, endPointX, endPointY)
+end
+
+-- advance sprite animation every 15 frames (2fps animation)
+local function advanceSprite(frameNumber)
+    if frameNumber == 15 then
+        CurrentFrame = (CurrentFrame % 6) + 1
+    end
+
+    smallSprite[CurrentFrame]:drawAnchored(5, 150, 0.0, 0.0)
 end
 
 -- playdate.update function is required in every project!
@@ -169,8 +186,8 @@ function playdate.update()
 
     -- y = 150 is 5px below the circles
 
-    gfx.drawRect(5, 150, 32, 32)
-
-    -- playerImage:drawAnchored(playerX, playerY, 0.5, 0.5)
+    -- draw sprite at (5, 150)
+    frameCounter = (frameCounter + 1) % 16
+    advanceSprite(frameCounter)
 
 end
