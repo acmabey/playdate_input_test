@@ -13,6 +13,17 @@ import "CoreLibs/sprites"
 local pd <const> = playdate
 local gfx <const> = playdate.graphics
 
+-- Set up variables to avoid redrawing unnecessarily
+local staticInfoDrawn = false
+local lastDrawnCrankAngles = {}
+local pressedButton = "none"
+local lastKnownPressedButton = ""
+local lastKnownDockState = true
+local crankTextWidth, crankTextHeight = gfx.getTextSize("Crank position: ")
+local buttonTextWidth, buttonTextHeight = gfx.getTextSize("Button Pressed: ")
+local dockTextWidth, dockTextHeight = gfx.getTextSize("Crank Docked: ")
+
+
 -- Define the d-pad shape
 local dPadPoints = {
     {200, 50},
@@ -37,14 +48,18 @@ for _, point in ipairs(dPadPoints) do
 end
 
 -- Prepare the sprite frames
-local smallSprite = {}
+local smallGirlSprite = {}
+local smallBoySprite = {}
 local frameCounter = 0
 CurrentFrame = 1
 
+-- first, set i = 0. loop until i = 5, increment i by 1 every iteration
 for i = 0, 5, 1
 do
-    table.insert(smallSprite, gfx.image.new("/images/sprite_" .. i .. ".png"))
+    table.insert(smallBoySprite, gfx.image.new("/images/32x boy" .. i .. ".png"))
+    table.insert(smallGirlSprite, gfx.image.new("/images/32x girl" .. i .. ".png"))
 end
+
 
 -- Drawing player image
 local playerImage = gfx.image.new(32, 32)
@@ -68,13 +83,6 @@ gfx.pushContext(playerImage)
     gfx.drawRect(10, 20, 2, 6)
 gfx.popContext()
 
--- Defining helper function
-local function ring(value, min, max)
-	if (min > max) then
-		min, max = max, min
-	end
-	return min + (value - min) % (max - min)
-end
 
 -- Draw a circle with a line indicating the crank's angle/position
 local function drawCrankAngle(xPosition, crankPosition, rotationIncrement, size)
@@ -96,30 +104,37 @@ local function advanceSprite(frameNumber)
         CurrentFrame = (CurrentFrame % 6) + 1
     end
 
-    smallSprite[CurrentFrame]:drawAnchored(5, 150, 0.0, 0.0)
+    smallGirlSprite[CurrentFrame]:drawAnchored(5, 150, 0.0, 0.0)
+    smallBoySprite[CurrentFrame]:drawAnchored(5, 183, 0.0, 0.0)
+end
+
+-- Set the pen to white
+local function setPenWhite()
+    gfx.setColor(gfx.kColorWhite)
+end
+
+-- Set the pen to black
+local function setPenBlack()
+    gfx.setColor(gfx.kColorBlack)
 end
 
 -- playdate.update function is required in every project!
 function playdate.update()
     -- Clear screen
-    gfx.clear()
+    -- TODO: see about a more targeted way to update the screen!
+    -- gfx.clear()
     -- Draw crank indicator if crank is docked
     if pd.isCrankDocked() then
         pd.ui.crankIndicator:draw()
-    -- else
-        -- Calculate velocity from crank angle 
-        -- local crankPosition = pd.getCrankPosition() - 90
-        --local xVelocity = math.cos(math.rad(crankPosition)) * playerVelocity
-        --local yVelocity = math.sin(math.rad(crankPosition)) * playerVelocity
-        -- Move player (add velocity to position)
-        -- Loop player position -> uses "ring" function
-
     end
+
     -- get the crank position as an int
     local intCrankPosition = math.floor(pd.getCrankPosition());
 
     -- store the button being pressed
-    local pressedButton = "none"
+    lastKnownPressedButton = pressedButton
+    pressedButton = "none"
+
     if pd.buttonIsPressed(pd.kButtonA) then
         pressedButton = "a"
     elseif pd.buttonIsPressed(pd.kButtonB) then
@@ -135,23 +150,67 @@ function playdate.update()
     end
 
     -- report input information
-    gfx.drawTextAligned("Crank position: " ..intCrankPosition, 10, 10, kTextAlignment.left)
+    if not staticInfoDrawn then
+        gfx.drawTextAligned("Crank position: " ..intCrankPosition, 10, 10, kTextAlignment.left)
+        gfx.drawTextAligned("Button pressed: " ..pressedButton, 10, 30, kTextAlignment.left)
+        gfx.drawTextAligned("Crank docked: " ..tostring(pd.isCrankDocked()), 10, 50, kTextAlignment.left)
+        staticInfoDrawn = true
+    end
 
-    gfx.drawTextAligned("Button pressed: " ..pressedButton, 10, 30, kTextAlignment.left)
+    if intCrankPosition ~= lastDrawnCrankAngles[1] then
+        setPenWhite()
+        gfx.fillRect(crankTextWidth + 12, 10, 30, crankTextHeight)
+        setPenBlack()
+        gfx.drawTextAligned(""..intCrankPosition, 12 + crankTextWidth, 10, kTextAlignment.left)
+    end
+
+    if pressedButton ~= lastKnownPressedButton then
+        setPenWhite()
+        gfx.fillRect(buttonTextWidth + 11, 30, 40, buttonTextHeight)
+        setPenBlack()
+        gfx.drawTextAligned(""..pressedButton, 12 + buttonTextWidth, 30, kTextAlignment.left)
+    end
+
+    if pd.isCrankDocked() ~= lastKnownDockState then
+        setPenWhite()
+        gfx.fillRect(dockTextWidth + 11, 50, 40, 15)
+        setPenBlack()
+        gfx.drawTextAligned(tostring(pd.isCrankDocked()), 12 + dockTextWidth, 50, kTextAlignment.left)
+    end
+
+    lastKnownDockState = pd.isCrankDocked()
 
     pd.drawFPS(380, 5)
 
-    -- draw crank indicator
-    gfx.drawTextAligned("Crank docked: " ..tostring(pd.isCrankDocked()), 10, 50, kTextAlignment.left)
+    -- Crank position indicators
+    if lastDrawnCrankAngles[1] ~= intCrankPosition then
+        setPenWhite()
+        gfx.fillRect(5, 85, 60, 61)
+        setPenBlack()
+        drawCrankAngle(35, intCrankPosition, 1, 30)
+        lastDrawnCrankAngles[1] = intCrankPosition
+    end
 
-    drawCrankAngle(35, intCrankPosition, 1, 30)
-    drawCrankAngle(95, intCrankPosition, 5, 30)
-    drawCrankAngle(155, intCrankPosition, 15, 30)
+    if lastDrawnCrankAngles[2] ~= ((intCrankPosition // 5) * 5) then
+        setPenWhite()
+        gfx.fillRect(65, 85, 60, 61)
+        setPenBlack()
+        drawCrankAngle(95, intCrankPosition, 5, 30)
+        lastDrawnCrankAngles[2] = ((intCrankPosition // 5) * 5)
+    end
+
+    if lastDrawnCrankAngles[3] ~= ((intCrankPosition // 15) * 15) then
+        setPenWhite()
+        gfx.fillRect(125, 85, 61, 61)
+        setPenBlack()
+        drawCrankAngle(155, intCrankPosition, 15, 30)
+        lastDrawnCrankAngles[3] = ((intCrankPosition // 15) * 15)
+    end
 
     -- button representations
     local dPadShape = pd.geometry.polygon.new(table.unpack(flattened))
     dPadShape:close()
-    gfx.drawPolygon(200, 50, 200, 35, 230, 35, 230, 5, 245, 5, 245, 35, 275, 35, 275, 50, 245, 50, 245, 80, 230, 80, 230, 50)
+    gfx.drawPolygon(dPadShape)
 
     if pd.buttonIsPressed(pd.kButtonUp) then
         gfx.fillRect(230, 5, 15, 15)

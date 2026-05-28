@@ -7,3 +7,5 @@ small playdate 'game' to display inputs & test out basic functions, made from Sq
     * crank position drawn three times with different rotational increments, showing how different levels of interpolation look/feel
 * sprite animation
     * 32x32 sprite looping an idle animation
+* minimal screen updates
+    * in progress, but all crank position indicators and text is only drawn upon values updating
