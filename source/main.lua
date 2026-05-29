@@ -83,19 +83,40 @@ gfx.pushContext(playerImage)
     gfx.drawRect(10, 20, 2, 6)
 gfx.popContext()
 
+-- Set the pen to white
+local function setPenWhite()
+    gfx.setColor(gfx.kColorWhite)
+end
+
+-- Set the pen to black
+local function setPenBlack()
+    gfx.setColor(gfx.kColorBlack)
+end
 
 -- Draw a circle with a line indicating the crank's angle/position
-local function drawCrankAngle(xPosition, crankPosition, rotationIncrement, size)
-    gfx.drawCircleAtPoint(xPosition, 115, size)
+local function drawCrankAngle(xPosition, crankPosition, rotationIncrement, size, circleID)
+    local drawnAngle = (crankPosition // rotationIncrement) * rotationIncrement
+    
+    if lastDrawnCrankAngles[circleID] ~= drawnAngle then
+            -- clear out the old drawing
+        setPenWhite()
+        gfx.fillRect(xPosition - size, 85, 60, 60)
+        setPenBlack()
 
-    -- display angle in text
-    gfx.drawTextAligned(""..rotationIncrement, xPosition, 67, kTextAlignment.right)
-    gfx.drawCircleAtPoint(xPosition + 5, 71, 3)
+        -- draw the new drawing
+        local lineLength = size - 1
+        local radians = math.rad((crankPosition // rotationIncrement) * rotationIncrement - 90)
+        local endPointX = xPosition + lineLength * math.cos(radians)
+        local endPointY = 115 + lineLength * math.sin(radians)
 
-    local radians = math.rad((crankPosition // rotationIncrement) * rotationIncrement - 90)
-    local endPointX = xPosition + size * math.cos(radians)
-    local endPointY = 115 + size * math.sin(radians)
-    gfx.drawLine(xPosition, 115, endPointX, endPointY)
+        gfx.drawCircleAtPoint(xPosition, 115, size)
+        gfx.drawTextAligned(""..rotationIncrement, xPosition, 67, kTextAlignment.right)
+        gfx.drawCircleAtPoint(xPosition + 5, 71, 3)
+    
+        gfx.drawLine(xPosition, 115, endPointX, endPointY)
+
+        lastDrawnCrankAngles[circleID] = drawnAngle
+    end
 end
 
 -- advance sprite animation every 15 frames (2fps animation)
@@ -106,16 +127,6 @@ local function advanceSprite(frameNumber)
 
     smallGirlSprite[CurrentFrame]:drawAnchored(5, 150, 0.0, 0.0)
     smallBoySprite[CurrentFrame]:drawAnchored(5, 183, 0.0, 0.0)
-end
-
--- Set the pen to white
-local function setPenWhite()
-    gfx.setColor(gfx.kColorWhite)
-end
-
--- Set the pen to black
-local function setPenBlack()
-    gfx.setColor(gfx.kColorBlack)
 end
 
 -- playdate.update function is required in every project!
@@ -183,29 +194,10 @@ function playdate.update()
     pd.drawFPS(380, 5)
 
     -- Crank position indicators
-    if lastDrawnCrankAngles[1] ~= intCrankPosition then
-        setPenWhite()
-        gfx.fillRect(5, 85, 60, 61)
-        setPenBlack()
-        drawCrankAngle(35, intCrankPosition, 1, 30)
-        lastDrawnCrankAngles[1] = intCrankPosition
-    end
 
-    if lastDrawnCrankAngles[2] ~= ((intCrankPosition // 5) * 5) then
-        setPenWhite()
-        gfx.fillRect(65, 85, 60, 61)
-        setPenBlack()
-        drawCrankAngle(95, intCrankPosition, 5, 30)
-        lastDrawnCrankAngles[2] = ((intCrankPosition // 5) * 5)
-    end
-
-    if lastDrawnCrankAngles[3] ~= ((intCrankPosition // 15) * 15) then
-        setPenWhite()
-        gfx.fillRect(125, 85, 61, 61)
-        setPenBlack()
-        drawCrankAngle(155, intCrankPosition, 15, 30)
-        lastDrawnCrankAngles[3] = ((intCrankPosition // 15) * 15)
-    end
+    drawCrankAngle(35, intCrankPosition, 1, 30, 1)
+    drawCrankAngle(95, intCrankPosition, 5, 30, 2)
+    drawCrankAngle(155, intCrankPosition, 15, 30, 3)
 
     -- button representations
     local dPadShape = pd.geometry.polygon.new(table.unpack(flattened))
