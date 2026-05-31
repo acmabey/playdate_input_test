@@ -19,6 +19,9 @@ local lastDrawnCrankAngles = {}
 local pressedButton = "none"
 local lastKnownPressedButton = ""
 local lastKnownDockState = true
+
+-- Up/Right/Down/Left/B/A
+local lastKnownButtonStates = {true, true, true, true, true, true}
 local crankTextWidth, crankTextHeight = gfx.getTextSize("Crank position: ")
 local buttonTextWidth, buttonTextHeight = gfx.getTextSize("Button Pressed: ")
 local dockTextWidth, dockTextHeight = gfx.getTextSize("Crank Docked: ")
@@ -165,6 +168,11 @@ function playdate.update()
         gfx.drawTextAligned("Crank position: " ..intCrankPosition, 10, 10, kTextAlignment.left)
         gfx.drawTextAligned("Button pressed: " ..pressedButton, 10, 30, kTextAlignment.left)
         gfx.drawTextAligned("Crank docked: " ..tostring(pd.isCrankDocked()), 10, 50, kTextAlignment.left)
+        
+        local dPadShape = pd.geometry.polygon.new(table.unpack(flattened))
+        dPadShape:close()
+        gfx.drawPolygon(dPadShape)
+
         staticInfoDrawn = true
     end
 
@@ -194,16 +202,11 @@ function playdate.update()
     pd.drawFPS(380, 5)
 
     -- Crank position indicators
-
     drawCrankAngle(35, intCrankPosition, 1, 30, 1)
     drawCrankAngle(95, intCrankPosition, 5, 30, 2)
     drawCrankAngle(155, intCrankPosition, 15, 30, 3)
 
     -- button representations
-    local dPadShape = pd.geometry.polygon.new(table.unpack(flattened))
-    dPadShape:close()
-    gfx.drawPolygon(dPadShape)
-
     if pd.buttonIsPressed(pd.kButtonUp) then
         gfx.fillRect(230, 5, 15, 15)
     end
@@ -220,20 +223,38 @@ function playdate.update()
     local circleY = 28
     local circleDiameter = 30
 
-    if pd.buttonIsPressed(pd.kButtonB) then
-        gfx.fillCircleInRect(290, circleY, circleDiameter, circleDiameter)
-    else
-        gfx.drawCircleInRect(290, circleY, circleDiameter, circleDiameter)
-        gfx.drawTextAligned("B", 305, circleY + 7, kTextAlignment.center)
+    if pd.buttonIsPressed(pd.kButtonB) ~= lastKnownButtonStates[5] then
+        setPenWhite()
+        gfx.fillRect(290, circleY, circleDiameter, circleDiameter)
+        setPenBlack()
+
+        if pd.buttonIsPressed(pd.kButtonB) then
+            gfx.fillCircleInRect(290, circleY, circleDiameter, circleDiameter)
+        else
+            gfx.drawCircleInRect(290, circleY, circleDiameter, circleDiameter)
+            gfx.drawTextAligned("B", 305, circleY + 7, kTextAlignment.center)
+        end
     end
 
-    if pd.buttonIsPressed(pd.kButtonA) then
-        gfx.fillCircleInRect(330, circleY, circleDiameter, circleDiameter)
-    else
-        gfx.drawCircleInRect(330, circleY, circleDiameter, circleDiameter)
-        gfx.drawTextAligned("A", 345, circleY + 7, kTextAlignment.center)
+    if pd.buttonIsPressed(pd.kButtonA) ~= lastKnownButtonStates[6] then
+        setPenWhite()
+        gfx.fillRect(330, circleY, circleDiameter, circleDiameter)
+        setPenBlack()
+
+        if pd.buttonIsPressed(pd.kButtonA) then
+            gfx.fillCircleInRect(330, circleY, circleDiameter, circleDiameter)
+        else
+            gfx.drawCircleInRect(330, circleY, circleDiameter, circleDiameter)
+            gfx.drawTextAligned("A", 345, circleY + 7, kTextAlignment.center)
+        end
     end
 
+    lastKnownButtonStates[1] = pd.buttonIsPressed(pd.kButtonUp)
+    lastKnownButtonStates[2] = pd.buttonIsPressed(pd.kButtonRight)
+    lastKnownButtonStates[3] = pd.buttonIsPressed(pd.kButtonDown)
+    lastKnownButtonStates[4] = pd.buttonIsPressed(pd.kButtonLeft)
+    lastKnownButtonStates[5] = pd.buttonIsPressed(pd.kButtonB)
+    lastKnownButtonStates[6] = pd.buttonIsPressed(pd.kButtonA)
 
     -- y = 150 is 5px below the circles
 
