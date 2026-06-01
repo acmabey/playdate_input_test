@@ -207,19 +207,46 @@ function playdate.update()
     drawCrankAngle(155, intCrankPosition, 15, 30, 3)
 
     -- button representations
-    if pd.buttonIsPressed(pd.kButtonUp) then
-        gfx.fillRect(230, 5, 15, 15)
+    if lastKnownButtonStates[1] ~= pd.buttonIsPressed(pd.kButtonUp) then
+        if pd.buttonIsPressed(pd.kButtonUp) then
+            gfx.fillRect(231, 6, 14, 14)
+        else
+            setPenWhite()
+            gfx.fillRect(231, 6, 14, 14)
+            setPenBlack()
+        end
     end
-    if pd.buttonIsPressed(pd.kButtonRight) then
-        gfx.fillRect(260, 35, 15, 15)
+
+    if lastKnownButtonStates[2] ~= pd.buttonIsPressed(pd.kButtonRight) then    
+        if pd.buttonIsPressed(pd.kButtonRight) then
+            gfx.fillRect(260, 36, 15, 14)
+        else 
+            setPenWhite()
+            gfx.fillRect(260, 36, 15, 14)
+            setPenBlack()
+        end
     end
-    if pd.buttonIsPressed(pd.kButtonDown) then
-        gfx.fillRect(230, 65, 15, 15)
+
+    if lastKnownButtonStates[3] ~= pd.buttonIsPressed(pd.kButtonDown) then
+        if pd.buttonIsPressed(pd.kButtonDown) then
+            gfx.fillRect(231, 65, 14, 15)
+        else
+            setPenWhite()
+            gfx.fillRect(231, 65, 14, 15)
+            setPenBlack()
+        end
     end
-    if pd.buttonIsPressed(pd.kButtonLeft) then
-        gfx.fillRect(200, 35, 15, 15)
+
+    if lastKnownButtonStates[4] ~= pd.buttonIsPressed(pd.kButtonLeft) then
+        if pd.buttonIsPressed(pd.kButtonLeft) then
+            gfx.fillRect(201, 36, 14, 14)
+        else
+            setPenWhite()
+            gfx.fillRect(201, 36, 14, 14)
+            setPenBlack()
+        end
     end
-    
+
     local circleY = 28
     local circleDiameter = 30
 
