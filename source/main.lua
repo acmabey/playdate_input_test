@@ -54,7 +54,8 @@ end
 local smallGirlSprite = {}
 local smallBoySprite = {}
 local frameCounter = 0
-CurrentFrame = 1
+local currentFrame = 1
+local lastFrame = 1
 
 -- first, set i = 0. loop until i = 5, increment i by 1 every iteration
 for i = 0, 5, 1
@@ -101,12 +102,10 @@ local function drawCrankAngle(xPosition, crankPosition, rotationIncrement, size,
     local drawnAngle = (crankPosition // rotationIncrement) * rotationIncrement
     
     if lastDrawnCrankAngles[circleID] ~= drawnAngle then
-            -- clear out the old drawing
         setPenWhite()
         gfx.fillRect(xPosition - size, 85, 60, 60)
         setPenBlack()
 
-        -- draw the new drawing
         local lineLength = size - 1
         local radians = math.rad((crankPosition // rotationIncrement) * rotationIncrement - 90)
         local endPointX = xPosition + lineLength * math.cos(radians)
@@ -124,28 +123,37 @@ end
 
 -- advance sprite animation every 15 frames (2fps animation)
 local function advanceSprite(frameNumber)
+    lastFrame = currentFrame
     if frameNumber == 15 then
-        CurrentFrame = (CurrentFrame % 6) + 1
+        currentFrame = (currentFrame % 6) + 1
     end
 
-    smallGirlSprite[CurrentFrame]:drawAnchored(5, 150, 0.0, 0.0)
-    smallBoySprite[CurrentFrame]:drawAnchored(5, 183, 0.0, 0.0)
+    if currentFrame ~= lastFrame then
+        setPenWhite()
+        gfx.fillRect(5, 150, 32, 32)
+        gfx.fillRect(5, 183, 32, 32)
+
+        smallGirlSprite[currentFrame]:drawAnchored(5, 150, 0.0, 0.0)
+        smallBoySprite[currentFrame]:drawAnchored(5, 183, 0.0, 0.0)
+    end
+end
+
+-- Clear out the crank indicator pop up: if sprites are being used, use AddDirtyRect(x, y, w, h)
+function pd.crankUndocked()
+    local x, y, w, h = pd.ui.crankIndicator:getBounds()
+    setPenWhite()
+    gfx.fillRect(x, y, w, h)
+    setPenBlack()
 end
 
 -- playdate.update function is required in every project!
 function playdate.update()
-    -- Clear screen
-    -- TODO: see about a more targeted way to update the screen!
-    -- gfx.clear()
-    -- Draw crank indicator if crank is docked
     if pd.isCrankDocked() then
         pd.ui.crankIndicator:draw()
     end
 
-    -- get the crank position as an int
     local intCrankPosition = math.floor(pd.getCrankPosition());
 
-    -- store the button being pressed
     lastKnownPressedButton = pressedButton
     pressedButton = "none"
 
@@ -163,7 +171,7 @@ function playdate.update()
         pressedButton = "left"
     end
 
-    -- report input information
+    -- draw information and graphics to the screen
     if not staticInfoDrawn then
         gfx.drawTextAligned("Crank position: " ..intCrankPosition, 10, 10, kTextAlignment.left)
         gfx.drawTextAligned("Button pressed: " ..pressedButton, 10, 30, kTextAlignment.left)
@@ -283,9 +291,7 @@ function playdate.update()
     lastKnownButtonStates[5] = pd.buttonIsPressed(pd.kButtonB)
     lastKnownButtonStates[6] = pd.buttonIsPressed(pd.kButtonA)
 
-    -- y = 150 is 5px below the circles
-
-    -- draw sprite at (5, 150)
+    -- draw and animate sprites
     frameCounter = (frameCounter + 1) % 16
     advanceSprite(frameCounter)
 
