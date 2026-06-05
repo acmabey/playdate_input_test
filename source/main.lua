@@ -50,6 +50,9 @@ for _, point in ipairs(dPadPoints) do
     table.insert(flattened, point[2])
 end
 
+local pont = gfx.font.new("/fonts/pont")
+gfx.setFont(pont)
+
 -- Prepare the sprite frames
 local smallGirlSprite = {}
 local smallBoySprite = {}
@@ -99,6 +102,9 @@ end
 
 -- Draw a circle with a line indicating the crank's angle/position
 local function drawCrankAngle(xPosition, crankPosition, rotationIncrement, size, circleID)
+    
+    print(pont)
+
     local drawnAngle = (crankPosition // rotationIncrement) * rotationIncrement
     
     if lastDrawnCrankAngles[circleID] ~= drawnAngle then
