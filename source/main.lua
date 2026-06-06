@@ -13,6 +13,11 @@ import "CoreLibs/sprites"
 local pd <const> = playdate
 local gfx <const> = playdate.graphics
 
+-- Spacing constants
+local topLeftOffset = 10
+local _, fontHeight = gfx.getTextSize("A")
+local totalUsedHeight = 0
+
 -- Set up variables to avoid redrawing unnecessarily
 local staticInfoDrawn = false
 local lastDrawnCrankAngles = {}
@@ -21,13 +26,25 @@ local lastKnownPressedButton = ""
 local lastKnownDockState = true
 
 -- Up/Right/Down/Left/B/A
+local pont = gfx.font.new("/fonts/pont")
+gfx.setFont(pont)
+
 local lastKnownButtonStates = {true, true, true, true, true, true}
 local crankTextWidth, crankTextHeight = gfx.getTextSize("Crank position: ")
+local crankTextY
 local buttonTextWidth, buttonTextHeight = gfx.getTextSize("Button Pressed: ")
+local buttonTextY
 local dockTextWidth, dockTextHeight = gfx.getTextSize("Crank Docked: ")
+local dockTextY
 
+-- Prepare the sprite frames
+local smallGirlSprite = {}
+local smallBoySprite = {}
+local frameCounter = 0
+local currentFrame = 1
+local lastFrame = 1
 
--- Define the d-pad shape
+-- locals with longer setups
 local dPadPoints = {
     {200, 50},
     {200, 35},
@@ -50,23 +67,11 @@ for _, point in ipairs(dPadPoints) do
     table.insert(flattened, point[2])
 end
 
-local pont = gfx.font.new("/fonts/pont")
-gfx.setFont(pont)
-
--- Prepare the sprite frames
-local smallGirlSprite = {}
-local smallBoySprite = {}
-local frameCounter = 0
-local currentFrame = 1
-local lastFrame = 1
-
--- first, set i = 0. loop until i = 5, increment i by 1 every iteration
 for i = 0, 5, 1
 do
     table.insert(smallBoySprite, gfx.image.new("/images/32x boy" .. i .. ".png"))
     table.insert(smallGirlSprite, gfx.image.new("/images/32x girl" .. i .. ".png"))
 end
-
 
 -- Drawing player image
 local playerImage = gfx.image.new(32, 32)
@@ -101,27 +106,26 @@ local function setPenBlack()
 end
 
 -- Draw a circle with a line indicating the crank's angle/position
-local function drawCrankAngle(xPosition, crankPosition, rotationIncrement, size, circleID)
-    
-    print(pont)
-
+local function drawCrankAngle(crankPosition, rotationIncrement, size, circleID)
     local drawnAngle = (crankPosition // rotationIncrement) * rotationIncrement
     
     if lastDrawnCrankAngles[circleID] ~= drawnAngle then
+        local diameter = size * 2
+        local xPosition = topLeftOffset + (diameter * circleID) - size
+        
         setPenWhite()
-        gfx.fillRect(xPosition - size, 85, 60, 60)
+        gfx.fillRect(xPosition - size, totalUsedHeight, diameter, diameter)
         setPenBlack()
 
         local lineLength = size - 1
         local radians = math.rad((crankPosition // rotationIncrement) * rotationIncrement - 90)
         local endPointX = xPosition + lineLength * math.cos(radians)
-        local endPointY = 115 + lineLength * math.sin(radians)
+        local endPointY = totalUsedHeight + size + lineLength * math.sin(radians)
 
-        gfx.drawCircleAtPoint(xPosition, 115, size)
-        gfx.drawTextAligned(""..rotationIncrement, xPosition, 67, kTextAlignment.right)
-        gfx.drawCircleAtPoint(xPosition + 5, 71, 3)
+        gfx.drawCircleAtPoint(xPosition, totalUsedHeight + (size), size)
+        gfx.drawTextAligned(rotationIncrement.."◦", xPosition, totalUsedHeight + diameter, kTextAlignment.center)
     
-        gfx.drawLine(xPosition, 115, endPointX, endPointY)
+        gfx.drawLine(xPosition, totalUsedHeight + size, endPointX, endPointY)
 
         lastDrawnCrankAngles[circleID] = drawnAngle
     end
@@ -179,9 +183,16 @@ function playdate.update()
 
     -- draw information and graphics to the screen
     if not staticInfoDrawn then
-        gfx.drawTextAligned("Crank position: " ..intCrankPosition, 10, 10, kTextAlignment.left)
-        gfx.drawTextAligned("Button pressed: " ..pressedButton, 10, 30, kTextAlignment.left)
-        gfx.drawTextAligned("Crank docked: " ..tostring(pd.isCrankDocked()), 10, 50, kTextAlignment.left)
+        totalUsedHeight += 5
+        crankTextY = totalUsedHeight
+        gfx.drawTextAligned("Crank position: " ..intCrankPosition, topLeftOffset, totalUsedHeight, kTextAlignment.left)
+        totalUsedHeight += crankTextHeight
+        buttonTextY = totalUsedHeight
+        gfx.drawTextAligned("Button pressed: " ..pressedButton, topLeftOffset, totalUsedHeight, kTextAlignment.left)
+        totalUsedHeight += buttonTextHeight
+        dockTextY = totalUsedHeight
+        gfx.drawTextAligned("Crank docked: " ..tostring(pd.isCrankDocked()), topLeftOffset, totalUsedHeight, kTextAlignment.left)
+        totalUsedHeight += dockTextHeight
         
         local dPadShape = pd.geometry.polygon.new(table.unpack(flattened))
         dPadShape:close()
@@ -192,23 +203,26 @@ function playdate.update()
 
     if intCrankPosition ~= lastDrawnCrankAngles[1] then
         setPenWhite()
-        gfx.fillRect(crankTextWidth + 12, 10, 30, crankTextHeight)
+        local crankValueWidth = gfx.getTextSize(tostring(lastDrawnCrankAngles[1])) + 4
+        gfx.fillRect(crankTextWidth + topLeftOffset, crankTextY, crankValueWidth, crankTextHeight)
         setPenBlack()
-        gfx.drawTextAligned(""..intCrankPosition, 12 + crankTextWidth, 10, kTextAlignment.left)
+        gfx.drawTextAligned(""..intCrankPosition, topLeftOffset + 2 + crankTextWidth, crankTextY, kTextAlignment.left)
     end
 
     if pressedButton ~= lastKnownPressedButton then
         setPenWhite()
-        gfx.fillRect(buttonTextWidth + 11, 30, 40, buttonTextHeight)
+        local buttonValueWidth = gfx.getTextSize(lastKnownPressedButton) + 4
+        gfx.fillRect(buttonTextWidth + topLeftOffset, buttonTextY, buttonValueWidth, buttonTextHeight)
         setPenBlack()
-        gfx.drawTextAligned(""..pressedButton, 12 + buttonTextWidth, 30, kTextAlignment.left)
+        gfx.drawTextAligned(""..pressedButton, topLeftOffset + 2 + buttonTextWidth, buttonTextY, kTextAlignment.left)
     end
 
     if pd.isCrankDocked() ~= lastKnownDockState then
         setPenWhite()
-        gfx.fillRect(dockTextWidth + 11, 50, 40, 15)
+        local dockValueWidth = gfx.getTextSize(tostring(lastKnownDockState)) + 4
+        gfx.fillRect(dockTextWidth + topLeftOffset, dockTextY, dockValueWidth, dockTextHeight)
         setPenBlack()
-        gfx.drawTextAligned(tostring(pd.isCrankDocked()), 12 + dockTextWidth, 50, kTextAlignment.left)
+        gfx.drawTextAligned(tostring(pd.isCrankDocked()), topLeftOffset + 2 + dockTextWidth, dockTextY, kTextAlignment.left)
     end
 
     lastKnownDockState = pd.isCrankDocked()
@@ -216,9 +230,9 @@ function playdate.update()
     pd.drawFPS(380, 5)
 
     -- Crank position indicators
-    drawCrankAngle(35, intCrankPosition, 1, 30, 1)
-    drawCrankAngle(95, intCrankPosition, 5, 30, 2)
-    drawCrankAngle(155, intCrankPosition, 15, 30, 3)
+    drawCrankAngle(intCrankPosition, 1, 30, 1)
+    drawCrankAngle(intCrankPosition, 5, 30, 2)
+    drawCrankAngle(intCrankPosition, 15, 30, 3)
 
     -- button representations
     if lastKnownButtonStates[1] ~= pd.buttonIsPressed(pd.kButtonUp) then
@@ -273,7 +287,7 @@ function playdate.update()
             gfx.fillCircleInRect(290, circleY, circleDiameter, circleDiameter)
         else
             gfx.drawCircleInRect(290, circleY, circleDiameter, circleDiameter)
-            gfx.drawTextAligned("B", 305, circleY + 7, kTextAlignment.center)
+            gfx.drawTextAligned("B", 305, circleY + 8, kTextAlignment.center)
         end
     end
 
@@ -286,7 +300,7 @@ function playdate.update()
             gfx.fillCircleInRect(330, circleY, circleDiameter, circleDiameter)
         else
             gfx.drawCircleInRect(330, circleY, circleDiameter, circleDiameter)
-            gfx.drawTextAligned("A", 345, circleY + 7, kTextAlignment.center)
+            gfx.drawTextAligned("A", 345, circleY + 8, kTextAlignment.center)
         end
     end
 
@@ -298,7 +312,7 @@ function playdate.update()
     lastKnownButtonStates[6] = pd.buttonIsPressed(pd.kButtonA)
 
     -- draw and animate sprites
-    frameCounter = (frameCounter + 1) % 16
-    advanceSprite(frameCounter)
+    -- frameCounter = (frameCounter + 1) % 16
+    -- advanceSprite(frameCounter)
 
 end

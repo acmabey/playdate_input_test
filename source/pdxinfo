@@ -1,6 +1,6 @@
 name=input test
 author=dragondux
-description=displays inputs as they come in and a representation of different increments of crank angles
+description=displays inputs as they come in along with a representation of different increments of crank angles
 bundleID=
-version=1.2.0
+version=1.2.1
 buildNumber=1
