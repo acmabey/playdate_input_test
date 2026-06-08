@@ -198,6 +198,9 @@ function playdate.update()
         dPadShape:close()
         gfx.drawPolygon(dPadShape)
 
+        local ships = gfx.image.new("/images/New Piskel(1).png")
+        ships:drawAnchored(50, 140, 0.0, 0.0)
+
         staticInfoDrawn = true
     end
 
@@ -312,7 +315,7 @@ function playdate.update()
     lastKnownButtonStates[6] = pd.buttonIsPressed(pd.kButtonA)
 
     -- draw and animate sprites
-    -- frameCounter = (frameCounter + 1) % 16
-    -- advanceSprite(frameCounter)
+    frameCounter = (frameCounter + 1) % 16
+    advanceSprite(frameCounter)
 
 end
