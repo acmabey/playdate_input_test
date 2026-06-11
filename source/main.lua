@@ -43,6 +43,8 @@ local smallBoySprite = {}
 local frameCounter = 0
 local currentFrame = 1
 local lastFrame = 1
+local shipImageTable = gfx.imagetable.new('/images/ship-table-64-64')
+-- TODO: make a default playdate sprite here, animate it manually
 
 -- locals with longer setups
 local dPadPoints = {
@@ -131,7 +133,8 @@ local function drawCrankAngle(crankPosition, rotationIncrement, size, circleID)
     end
 end
 
--- advance sprite animation every 15 frames (2fps animation)
+--- advance sprite animation every 15th frame (2fps animation)
+--- @param frameNumber integer frame number used to re-draw the image
 local function advanceSprite(frameNumber)
     lastFrame = currentFrame
     if frameNumber == 15 then
@@ -197,9 +200,6 @@ function playdate.update()
         local dPadShape = pd.geometry.polygon.new(table.unpack(flattened))
         dPadShape:close()
         gfx.drawPolygon(dPadShape)
-
-        local ships = gfx.image.new("/images/New Piskel(1).png")
-        ships:drawAnchored(50, 140, 0.0, 0.0)
 
         staticInfoDrawn = true
     end
@@ -317,5 +317,7 @@ function playdate.update()
     -- draw and animate sprites
     frameCounter = (frameCounter + 1) % 16
     advanceSprite(frameCounter)
+
+    
 
 end
